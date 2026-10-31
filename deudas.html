@@ -97,7 +97,7 @@ button { font-family:inherit; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 3;
+window.APP_VERSION = 4;
 const S = window.SEBA, PREFIJO = S.prefijo;
 document.getElementById('btnVolver').href = 'balance.html?p=' + PREFIJO;
 document.getElementById('headerSub').textContent = 'Deudas · ' + PREFIJO;
@@ -116,6 +116,8 @@ async function cargar() {
     const [e, d, c] = await Promise.all([S.api('getEstado', {}), S.api('getDeudas', {}), S.api('getCompromisos', { periodo })]);
     if (!e || !d || !c) { document.getElementById('appContent').innerHTML = '<div class="loading" style="color:var(--rojo);">❌ Sin conexión.<br><br><button class="btn-secundario" style="max-width:200px" onclick="cargar()">🔄 Reintentar</button></div>'; return; }
     if (chequearSesion(e) || chequearSesion(d) || chequearSesion(c)) return;
+    // v4: Deudas y compromisos no está en el plan → pantalla para mejorar el plan
+    if (d.moduloNoHabilitado || c.moduloNoHabilitado) { document.querySelector('.tabs').style.display = 'none'; document.getElementById('appContent').innerHTML = S.htmlBloqueo({ error: d.error || c.error, whatsapp: e.soporte && e.soporte.whatsapp }, e.nombre); return; }
     if (e.error || d.error || c.error) { sinSesion('❌ ' + (e.error || d.error || c.error)); return; }
     estado = e; deudas = d.deudas; comp = c;
     if (e.nombre) document.getElementById('headerTitulo').textContent = e.nombre;

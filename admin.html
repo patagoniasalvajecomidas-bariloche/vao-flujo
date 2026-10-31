@@ -576,6 +576,15 @@ body {
     }
 }
 
+.stats-grid { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 600px) { .stats-grid { flex-wrap: wrap; row-gap: 8px; } .stat-card { flex: 1 1 45% !important; border-right: none !important; } }
+.plan-tag { display:inline-block; font-size:0.66rem; font-weight:800; padding:2px 7px; border-radius:8px; background:#EDE7F6; color:#4527A0; margin-left:4px; vertical-align:middle; }
+.plan-tag.PRUEBA { background:#E8F5E9; color:#2E7D32; } .plan-tag.BASICO { background:#ECEFF1; color:#37474F; } .plan-tag.PLUS { background:#FFF3E0; color:#E65100; } .plan-tag.PREMIUM { background:#EDE7F6; color:#4527A0; }
+.cobro-row { display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid var(--borde); padding:9px 0; font-size:0.85rem; }
+.cobro-row.anulado { opacity:.5; text-decoration:line-through; }
+.aviso-box { border-radius:10px; padding:10px 12px; font-size:0.85rem; margin-bottom:10px; }
+.aviso-box.ok { background:#E8F5E9; color:#2E7D32; } .aviso-box.mal { background:#FFF3E0; color:#8a4b00; }
+textarea.form-input { min-height:220px; font-family:inherit; line-height:1.45; }
 .inc-item { border-bottom:1px solid var(--borde); padding:10px 0; font-size:0.85rem; }
 .inc-item:last-child { border-bottom:none; }
 .inc-meta { font-size:0.72rem; color:var(--gris); margin-bottom:3px; }
@@ -615,6 +624,7 @@ body { overflow-x:hidden; }
         <div class="stats-grid">
             <div class="stat-card"><span class="stat-icono-movil">👥</span><div class="stat-numero" id="statTotal">—</div><div class="stat-label">Clientes</div></div>
             <div class="stat-card"><span class="stat-icono-movil">✅</span><div class="stat-numero" id="statActivos">—</div><div class="stat-label">Activos</div></div>
+            <div class="stat-card"><span class="stat-icono-movil">💲</span><div class="stat-numero" id="statCobrado">—</div><div class="stat-label"><span class="th-desktop">Cobrado este mes</span><span class="th-mobile">Cobrado</span></div></div>
             <div class="stat-card"><span class="stat-icono-movil">🐞</span><div class="stat-numero" id="statInc">—</div><div class="stat-label"><span class="th-desktop">Reportes nuevos</span><span class="th-mobile">Reportes</span></div></div>
         </div>
         <div class="seccion">
@@ -629,9 +639,27 @@ body { overflow-x:hidden; }
                     <button class="btn-accion" id="btnBarraActivar" style="background:#FFEBEE;color:var(--rojo);" onclick="accionBarraToggleActivo()">🔒 Susp./Activ.</button>
                     <button class="btn-accion" style="background:#FFF3E0;color:#E65100;" onclick="abrirModalVigencia(clienteSeleccionadoPrefijo)">📅 Vigencia</button>
                     <button class="btn-accion" style="background:#F3E5F5;color:#6A1B9A;" onclick="accionBarraResetPin()">🔑 PIN</button>
+                    <button class="btn-accion" style="background:#E8F5E9;color:var(--verde);" onclick="abrirPago(clienteSeleccionadoPrefijo)">💲 Pago</button>
+                    <button class="btn-accion" style="background:#E3F2FD;color:var(--azul-dark);" onclick="enviarAcceso(clienteSeleccionadoPrefijo)">✉️ Acceso</button>
                 </div>
             </div>
             <div id="contenedorClientes"><div class="cargando-clientes">Cargando clientes...</div></div>
+        </div>
+        <div class="seccion">
+            <div class="seccion-header"><div class="seccion-titulo">💲 Cobros</div><input type="month" class="form-input" id="mesCobros" style="max-width:170px;padding:7px 10px;" onchange="cargarCobros()"></div>
+            <div id="contenedorCobros" style="font-size:0.85rem;color:var(--gris);">Cargando...</div>
+        </div>
+        <div class="seccion">
+            <div class="seccion-header"><div class="seccion-titulo">⭐ Planes</div><span style="font-size:0.75rem;color:var(--gris);">Se editan en la hoja PLANES</span></div>
+            <div id="contenedorPlanes" style="font-size:0.85rem;color:var(--gris);">Cargando...</div>
+        </div>
+        <div class="seccion">
+            <div class="seccion-header"><div class="seccion-titulo">✉️ Correos</div><button class="btn-primario" onclick="cargarCorreo()">🔄</button></div>
+            <div id="contenedorCorreo" style="font-size:0.85rem;color:var(--gris);">Cargando...</div>
+        </div>
+        <div class="seccion">
+            <div class="seccion-header"><div class="seccion-titulo">📄 Acuerdo de uso</div><button class="btn-primario" onclick="cargarAcuerdo()">🔄</button></div>
+            <div id="contenedorAcuerdo" style="font-size:0.85rem;color:var(--gris);">Cargando...</div>
         </div>
         <div class="seccion">
             <div class="seccion-header"><div class="seccion-titulo">🛒 Productos nuevos de clientes</div><button class="btn-primario" onclick="cargarProdClientes()">🔄 Ver</button></div>
@@ -666,8 +694,20 @@ body { overflow-x:hidden; }
             <div class="form-grupo"><label class="form-label">Contacto</label><input type="text" class="form-input" id="altaContacto" placeholder="María García"></div>
             <div class="form-grupo"><label class="form-label">Teléfono / WhatsApp</label><input type="text" class="form-input" id="altaTelefono" placeholder="549294..."></div>
         </div>
-        <div class="form-grupo"><label class="form-label">Correo</label><input type="text" inputmode="email" class="form-input" id="altaCorreo" placeholder="maria@correo.com" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" oninput="const v=this.value.toLowerCase();if(v!==this.value){const p=this.selectionStart;this.value=v;this.setSelectionRange(p,p);}" onchange="this.value=SEBA.correo(this.value)" style="text-transform:none;"></div>
+        <div class="form-grupo"><label class="form-label">Correo * (le llega la bienvenida con el PIN)</label><input type="text" inputmode="email" class="form-input" id="altaCorreo" placeholder="maria@correo.com" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" oninput="const v=this.value.toLowerCase();if(v!==this.value){const p=this.selectionStart;this.value=v;this.setSelectionRange(p,p);}" onchange="this.value=SEBA.correo(this.value)" style="text-transform:none;"></div>
         <div id="altaPerfilDesc" style="font-size:0.8rem;color:var(--gris);margin-bottom:6px;"></div>
+        <div class="form-grupo"><label class="form-label">Plan</label><select class="form-select" id="altaPlan" onchange="altaPlanCambio()"><option value="PRUEBA">Prueba gratis 30 días</option></select></div>
+        <div id="altaPagoBox" style="display:none;background:#F7F9FC;border-radius:12px;padding:12px;margin-bottom:12px;">
+            <div class="form-fila">
+                <div class="form-grupo"><label class="form-label">Período</label><select class="form-select" id="altaPeriodo" onchange="altaPlanCambio()"><option value="MENSUAL">Mensual</option><option value="ANUAL">Anual</option></select></div>
+                <div class="form-grupo"><label class="form-label">Importe</label><input class="form-input" id="altaImporte" inputmode="decimal"></div>
+            </div>
+            <div class="form-fila">
+                <div class="form-grupo"><label class="form-label">Medio</label><select class="form-select" id="altaMedio"><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>OTRO</option></select></div>
+                <div class="form-grupo"><label class="form-label">N° de operación</label><input class="form-input" id="altaRef" placeholder="Comprobante"></div>
+            </div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:0.88rem;font-weight:600;margin-bottom:6px;"><input type="checkbox" id="altaCorreoChk" checked style="width:18px;height:18px;"> Mandar correo de bienvenida con usuario y PIN</label>
         <div class="modal-footer">
             <button class="btn-cancelar" onclick="cancelarAlta()">Cancelar</button>
             <button class="btn-primario btn-verde" onclick="crearCliente()" id="btnCrear" style="font-size:0.9rem;padding:13px;justify-content:center;">Crear cliente</button>
@@ -675,10 +715,37 @@ body { overflow-x:hidden; }
     </div>
 </div>
 
+<!-- ══ MODAL PAGO (v4) ══ -->
+<div class="modal-overlay" id="modalPago">
+    <div class="modal">
+        <div class="modal-titulo">💲 Registrar pago</div>
+        <p style="font-size:0.85rem;color:var(--gris);margin:-8px 0 14px;" id="pagoInfo"></p>
+        <div class="form-fila">
+            <div class="form-grupo"><label class="form-label">Plan</label><select class="form-select" id="pagoPlan" onchange="pagoCambio()"></select></div>
+            <div class="form-grupo"><label class="form-label">Período</label><select class="form-select" id="pagoPeriodo" onchange="pagoCambio()"><option value="MENSUAL">Mensual</option><option value="ANUAL">Anual</option></select></div>
+        </div>
+        <div class="form-fila">
+            <div class="form-grupo"><label class="form-label">Importe</label><input class="form-input" id="pagoImporte" inputmode="decimal"></div>
+            <div class="form-grupo"><label class="form-label">Fecha del pago</label><input type="date" class="form-input" id="pagoFecha"></div>
+        </div>
+        <div class="form-fila">
+            <div class="form-grupo"><label class="form-label">Medio</label><select class="form-select" id="pagoMedio"><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>OTRO</option></select></div>
+            <div class="form-grupo"><label class="form-label">N° de operación / comprobante</label><input class="form-input" id="pagoRef" placeholder="No se puede repetir"></div>
+        </div>
+        <div id="pagoVence" style="font-size:0.85rem;font-weight:700;color:var(--azul-dark);margin-bottom:10px;"></div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:0.88rem;font-weight:600;"><input type="checkbox" id="pagoCorreo" checked style="width:18px;height:18px;"> Mandar comprobante por correo</label>
+        <div class="login-error" id="pagoError"></div>
+        <div class="modal-footer">
+            <button class="btn-cancelar" onclick="cerrarPago(true)">Cancelar</button>
+            <button class="btn-primario btn-verde" onclick="confirmarPago()" id="btnPago" style="font-size:0.9rem;padding:13px;justify-content:center;">Registrar pago</button>
+        </div>
+    </div>
+</div>
+
 <!-- ══ MODAL VIGENCIA ══ -->
 <div class="modal-overlay" id="modalVigencia">
     <div class="modal">
-        <div class="modal-titulo">📅 Renovar vigencia</div>
+        <div class="modal-titulo">🎁 Días de regalo (cortesía)</div>
         <p style="font-size:0.85rem;color:var(--gris);margin:-8px 0 14px;">Cliente: <strong id="vigenciaPrefijo"></strong> — vencimiento actual: <span id="vigenciaFechaActual">—</span></p>
         <div class="form-grupo">
             <label class="form-label">Días a sumar</label>
@@ -700,7 +767,7 @@ body { overflow-x:hidden; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 3;
+window.APP_VERSION = 4;
 const S = window.SEBA;
 document.addEventListener('DOMContentLoaded', function () {
     var tag = document.createElement('span');
@@ -747,7 +814,7 @@ function mostrarError(msg) { const e = document.getElementById('loginError'); e.
 function mostrarAdmin() {
     document.getElementById('panelLogin').style.display = 'none';
     document.getElementById('panelAdmin').style.display = 'block';
-    cargarClientes(); cargarPerfiles();
+    cargarClientes(); cargarPerfiles(); cargarPlanes(); cargarCobros(); cargarCorreo(); cargarAcuerdo();
 }
 async function cargarPerfiles() {
     const r = await api('getPerfiles');
@@ -767,6 +834,7 @@ async function cargarClientes() {
     document.getElementById('statTotal').textContent = clientesCargados.length;
     document.getElementById('statActivos').textContent = clientesCargados.filter(c => c.activo).length;
     document.getElementById('statInc').textContent = res.incidenciasNuevas || 0;
+    document.getElementById('statCobrado').textContent = res.cobradoMes ? S.fmt(res.cobradoMes) : '$0';
     renderClientes();
 }
 function fechaAR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -778,12 +846,14 @@ function renderClientes() {
         '<th><span class="th-desktop">Prefijo</span><span class="th-mobile">ID</span></th><th>Nombre</th><th><span class="th-desktop">Estado</span><span class="th-mobile">E</span></th>' +
         '<th>Vigencia</th><th><span class="th-desktop">PIN</span><span class="th-mobile">🔑</span></th><th><span class="th-desktop">Gastos mes</span><span class="th-mobile">Gastos mes</span></th><th>Acciones</th></tr></thead><tbody>' +
         clientesCargados.map(c => '<tr class="' + (c.prefijo === clienteSeleccionadoPrefijo ? 'fila-seleccionada' : '') + '" onclick="if(!event.target.closest(\'.acciones\')) seleccionarCliente(\'' + c.prefijo + '\')">' +
-            '<td><span class="prefijo-tag">' + S.esc(c.prefijo) + '</span></td><td><strong>' + S.esc(c.nombre || '—') + '</strong><div style="font-size:0.7rem;color:var(--gris);">' + S.esc(c.perfil) + ' · ' + c.movimientos + ' mov.</div></td>' +
+            '<td><span class="prefijo-tag">' + S.esc(c.prefijo) + '</span></td><td><strong>' + S.esc(c.nombre || '—') + '</strong><span class="plan-tag ' + S.esc(c.plan) + '">' + S.esc(nombrePlan(c.plan)) + '</span><div style="font-size:0.7rem;color:var(--gris);">' + S.esc(c.perfil) + ' · ' + c.movimientos + ' mov.' + (c.correo ? '' : ' · ⚠️ sin correo') + '</div></td>' +
             '<td><span class="badge ' + (c.activo ? 'badge-activo' : 'badge-inactivo') + '"><span class="celda-icono-movil">' + (c.activo ? '✅' : '❌') + '</span><span class="celda-texto">' + (c.activo ? '✅ Activo' : '❌ Suspendido') + '</span></span></td>' +
-            '<td><span class="badge ' + (c.vigente ? 'badge-activo' : 'badge-inactivo') + '">' + (c.fechaVence ? (c.vigente ? '📅 Vence ' : '⛔ Venció ') + fechaAR(c.fechaVence) : '— Sin vencimiento') + '</span></td>' +
+            '<td><span class="badge ' + (c.vigente ? (c.diasRestantes !== null && c.diasRestantes <= 5 ? 'badge-pendiente' : 'badge-activo') : 'badge-inactivo') + '">' + (c.fechaVence ? (c.vigente ? '📅 Vence ' : '⛔ Venció ') + fechaAR(c.fechaVence) + (c.vigente && c.diasRestantes !== null ? ' (' + c.diasRestantes + ' d)' : '') : '— Sin vencimiento') + '</span></td>' +
             '<td><span class="badge ' + (c.tienePin ? 'badge-ok' : 'badge-pendiente') + '"><span class="celda-icono-movil">' + (c.tienePin ? '🔑' : '⚠️') + '</span><span class="celda-texto">' + (c.tienePin ? '🔑 PIN' : '⚠️ Sin PIN') + '</span></span></td>' +
             '<td style="font-weight:700;color:var(--azul-dark);">' + (c.gastosMes > 0 ? S.fmt(c.gastosMes) : '—') + '</td>' +
             '<td><div class="acciones"><button class="btn-accion" style="background:#E3F2FD;color:var(--azul-dark);" onclick="abrirApp(\'' + c.prefijo + '\')">📱 App</button>' +
+            '<button class="btn-accion" style="background:#E8F5E9;color:var(--verde);" onclick="abrirPago(\'' + c.prefijo + '\')">💲 Pago</button>' +
+            '<button class="btn-accion" style="background:#E3F2FD;color:var(--azul-dark);" onclick="enviarAcceso(\'' + c.prefijo + '\')">✉️ Acceso</button>' +
             '<button class="btn-accion" style="background:' + (c.activo ? '#FFEBEE' : '#E8F5E9') + ';color:' + (c.activo ? 'var(--rojo)' : 'var(--verde)') + ';" onclick="toggleActivo(\'' + c.prefijo + '\',' + c.activo + ')">' + (c.activo ? '🔒 Suspender' : '✅ Activar') + '</button>' +
             '<button class="btn-accion" style="background:#FFF3E0;color:#E65100;" onclick="abrirModalVigencia(\'' + c.prefijo + '\')">📅 Vigencia</button>' +
             '<button class="btn-accion" style="background:#F3E5F5;color:#6A1B9A;" onclick="resetPin(\'' + c.prefijo + '\')">🔑 Reset PIN</button></div></td></tr>').join('') +
@@ -802,11 +872,19 @@ function actualizarBarraAccionMovil() {
 function accionBarraToggleActivo() { const c = clientesCargados.find(x => x.prefijo === clienteSeleccionadoPrefijo); if (c) toggleActivo(c.prefijo, c.activo); }
 function accionBarraResetPin() { if (clienteSeleccionadoPrefijo) resetPin(clienteSeleccionadoPrefijo); }
 // Regla de oro: el alta se va guardando en esta compu mientras escribís (se recupera si se cierra la página).
-let borradorAlta = null;
+let borradorAlta = null, altaOpPago = null;
 function abrirModalAlta() {
-    borradorAlta = S.borrador('alta_cliente', '#modalAlta');
+    borradorAlta = S.borrador('alta_cliente', '#modalAlta', { extra: () => ({ op: altaOpPago }), alRestaurar: x => { altaOpPago = x.op || null; } });
+    llenarPlanes('altaPlan', true);
     if (borradorAlta.restaurar()) { validarPrefijo(); toast('📝 Recuperé el alta que estabas escribiendo', 'verde'); const p = perfiles.find(x => x.id === document.getElementById('altaPerfil').value); document.getElementById('altaPerfilDesc').textContent = p ? p.descripcion + ' — se copian sus categorías y cuentas de partida.' : ''; }
+    altaPlanCambio(true);
     document.getElementById('modalAlta').classList.add('visible'); document.getElementById('altaPrefijo').focus();
+}
+function altaPlanCambio(sinPisar) {
+    const cod = document.getElementById('altaPlan').value, box = document.getElementById('altaPagoBox');
+    box.style.display = cod === 'PRUEBA' ? 'none' : 'block';
+    const p = planes.find(x => x.codigo === cod);
+    if (p && !(sinPisar && document.getElementById('altaImporte').value)) document.getElementById('altaImporte').value = String(document.getElementById('altaPeriodo').value === 'ANUAL' ? p.anual : p.mensual).replace('.', ',');
 }
 function cancelarAlta() {
     const algo = ['altaPrefijo', 'altaNombre', 'altaContacto', 'altaTelefono', 'altaCorreo'].some(id => document.getElementById(id).value.trim());
@@ -829,21 +907,29 @@ let creando = false;
 async function crearCliente() {
     if (creando) return;
     const v = id => document.getElementById(id).value.trim();
-    const prefijo = v('altaPrefijo'), nombre = v('altaNombre'), perfil = v('altaPerfil');
+    const prefijo = v('altaPrefijo'), nombre = v('altaNombre'), perfil = v('altaPerfil'), correoAlta = S.correo(v('altaCorreo')), planAlta = v('altaPlan');
     let ok = true;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correoAlta)) { document.getElementById('altaCorreo').classList.add('error'); toast('Falta el correo (ahí le llega el PIN)', 'rojo'); ok = false; }
     if (!/^[A-Z]{2,3}$/.test(prefijo)) { document.getElementById('altaPrefijo').classList.add('error'); ok = false; }
     if (!nombre) { document.getElementById('altaNombre').classList.add('error'); ok = false; }
     if (!perfil) { toast('Elegí un perfil', 'rojo'); ok = false; }
     if (!ok) { toast('Completá los campos obligatorios', 'rojo'); return; }
     if (clientesCargados.some(c => c.prefijo === prefijo)) { toast('El prefijo ' + prefijo + ' ya existe', 'rojo'); return; }
     const btn = document.getElementById('btnCrear'); btn.innerHTML = '<span class="spinner"></span> Creando...'; btn.disabled = true; creando = true;
-    const res = await api('crearCliente', { prefijo, nombre, perfil, contacto: v('altaContacto'), telefono: v('altaTelefono'), correo: S.correo(v('altaCorreo')) });
+    const datosAlta = { prefijo, nombre, perfil, contacto: v('altaContacto'), telefono: v('altaTelefono'), correo: correoAlta, enviarCorreo: document.getElementById('altaCorreoChk').checked };
+    if (planAlta !== 'PRUEBA') {
+        if (!altaOpPago) { altaOpPago = S.nuevoOpId(); if (borradorAlta) borradorAlta.guardar(); }
+        datosAlta.pago = { plan: planAlta, periodo: v('altaPeriodo'), importe: S.leerImporte(v('altaImporte')), medio: v('altaMedio'), referencia: v('altaRef'), opId: altaOpPago };
+    }
+    const res = await api('crearCliente', datosAlta);
     btn.innerHTML = 'Crear cliente'; btn.disabled = false; creando = false;
     if (!res) { alert('No hubo respuesta del servidor.\n\nPuede que el cliente se haya creado igual. Recargo la lista: si ' + prefijo + ' aparece, usá 🔑 Reset PIN para obtener su PIN. Si NO aparece, tocá Crear cliente de nuevo: lo que escribiste sigue acá.'); cargarClientes(); return; }
     if (manejarSesion(res)) return;
     if (res.error) { toast('Error: ' + res.error, 'rojo'); return; }
-    cerrarModalAlta(); await cargarClientes();
-    alert('✅ ' + nombre + ' (' + prefijo + ') creado con ' + res.conceptos + ' conceptos y ' + res.cuentas + ' cuentas.\n\nPIN de acceso: ' + res.pin + '\n\nAnotalo ahora — no se puede volver a ver.\nEntra en: balance.html?p=' + prefijo);
+    altaOpPago = null; cerrarModalAlta(); await cargarClientes(); cargarCobros();
+    const lineaCorreo = res.correo ? (res.correo.enviado ? '✉️ Bienvenida enviada a ' + correoAlta + '.' : '⚠️ El correo NO salió: ' + res.correo.motivo) : '(sin correo)';
+    const lineaPago = res.pago ? (res.pago.success ? '💲 Pago registrado: plan ' + nombrePlan(res.plan) + ' hasta el ' + fechaAR(res.fechaVence) + '.' : '⚠️ El cliente se creó en PRUEBA pero el pago NO se registró: ' + res.pago.error + ' Registralo con 💲 Pago.') : '🎁 Prueba gratis hasta el ' + fechaAR(res.fechaVence) + '.';
+    alert('✅ ' + nombre + ' (' + prefijo + ') creado con ' + res.conceptos + ' conceptos y ' + res.cuentas + ' cuentas.\n\n' + lineaPago + '\n' + lineaCorreo + '\n\nPIN de acceso: ' + res.pin + '\n\nAnotalo ahora — no se puede volver a ver.');
 }
 async function toggleActivo(prefijo, activo) {
     if (!confirm('¿' + (activo ? 'Suspender' : 'Activar') + ' al cliente ' + prefijo + '?')) return;
@@ -853,21 +939,23 @@ async function toggleActivo(prefijo, activo) {
     if (res.error) { toast('Error: ' + res.error, 'rojo'); return; }
     toast(activo ? '🔒 Cliente suspendido' : '✅ Cliente activado', activo ? '' : 'verde'); cargarClientes();
 }
-let vigenciaPrefijoActual = '';
+let vigenciaPrefijoActual = '', vigOp = null;
 function abrirModalVigencia(p) {
     vigenciaPrefijoActual = p; const c = clientesCargados.find(x => x.prefijo === p);
     document.getElementById('vigenciaPrefijo').textContent = p;
     document.getElementById('vigenciaFechaActual').textContent = c && c.fechaVence ? fechaAR(c.fechaVence) + (c.vigente ? ' (vigente)' : ' (vencida)') : 'sin vencimiento asignado';
     document.getElementById('vigenciaDias').value = ''; document.getElementById('modalVigencia').classList.add('visible');
 }
-function cerrarModalVigencia() { document.getElementById('modalVigencia').classList.remove('visible'); vigenciaPrefijoActual = ''; }
+function cerrarModalVigencia() { document.getElementById('modalVigencia').classList.remove('visible'); vigenciaPrefijoActual = ''; vigOp = null; }
 async function confirmarVigencia() {
     const dias = parseInt(document.getElementById('vigenciaDias').value, 10);
     if (!dias || dias <= 0) { toast('Ingresá una cantidad de días válida', 'rojo'); return; }
     const btn = document.getElementById('btnVigencia'); btn.disabled = true; btn.textContent = 'Renovando...';
-    const res = await api('renovarVigencia', { prefijo: vigenciaPrefijoActual, dias });
+    if (!vigOp) vigOp = S.nuevoOpId();
+    const res = await api('renovarVigencia', { prefijo: vigenciaPrefijoActual, dias, opId: vigOp });
     btn.disabled = false; btn.textContent = 'Renovar';
-    if (!res) { toast('Sin respuesta: revisá la vigencia en la lista antes de reintentar (podría sumarse dos veces)', 'rojo'); cerrarModalVigencia(); cargarClientes(); return; }
+    if (!res) { toast('Sin respuesta: tocá Renovar de nuevo (no se suma dos veces)', 'rojo'); return; }
+    vigOp = null;
     if (manejarSesion(res)) return;
     if (res.error) { toast('Error: ' + res.error, 'rojo'); return; }
     toast('✅ Vigencia renovada hasta ' + fechaAR(res.fechaVence), 'verde'); cerrarModalVigencia(); cargarClientes();
@@ -875,11 +963,12 @@ async function confirmarVigencia() {
 async function resetPin(p) {
     const c = clientesCargados.find(x => x.prefijo === p);
     if (!confirm('¿Resetear el PIN de ' + p + ' (' + (c ? c.nombre : '') + ')?\n\nSe genera un PIN nuevo y el anterior deja de funcionar.')) return;
-    const res = await api('resetPin', { prefijo: p });
+    const enviar = !!(c && c.correo) && confirm('¿Mandar el PIN nuevo por correo a ' + c.correo + '?\n\nAceptar = sí · Cancelar = solo mostrarlo acá');
+    const res = await api('resetPin', { prefijo: p, enviarCorreo: enviar });
     if (!res) { toast('Sin respuesta: volvé a resetear para ver un PIN nuevo', 'rojo'); return; }
     if (manejarSesion(res)) return;
     if (res.error) { toast('Error: ' + res.error, 'rojo'); return; }
-    alert('🔑 PIN nuevo para ' + p + ': ' + res.pin + '\n\nAnotalo ahora — no se puede volver a ver.'); cargarClientes();
+    alert('🔑 PIN nuevo para ' + p + ': ' + res.pin + (res.correo ? '\n\n' + (res.correo.enviado ? '✉️ También se lo mandamos por correo.' : '⚠️ El correo NO salió: ' + res.correo.motivo) : '') + '\n\nAnotalo ahora — no se puede volver a ver.'); cargarClientes();
 }
 function abrirApp(p) { window.open('balance.html?p=' + p, '_blank'); }
 async function cargarIncidencias() {
@@ -906,6 +995,128 @@ async function promover(prefijo, id, btn) {
     if (manejarSesion(res)) return;
     if (res.error) { btn.disabled = false; btn.textContent = 'Pasar a la lista común'; toast('Error: ' + res.error, 'rojo'); return; }
     toast(res.yaExistia ? 'Ya estaba en la lista común' : '✅ Agregado a la lista común (' + res.id + ')', 'verde'); cargarProdClientes();
+}
+// ══ v4: PLANES, PAGOS, COBROS, CORREOS Y ACUERDO ══
+let planes = [];
+function nombrePlan(cod) { const p = planes.find(x => x.codigo === cod); return p ? p.nombre : (cod || '—'); }
+function llenarPlanes(id, conPrueba) {
+    const sel = document.getElementById(id), act = sel.value;
+    sel.innerHTML = planes.filter(p => p.activo && (conPrueba || p.codigo !== 'PRUEBA')).map(p => '<option value="' + S.esc(p.codigo) + '">' + S.esc(p.codigo === 'PRUEBA' ? 'Prueba gratis ' + p.diasPrueba + ' días' : p.nombre + ' — ' + S.fmt(p.mensual) + '/mes · ' + S.fmt(p.anual) + '/año') + '</option>').join('') || '<option value="PRUEBA">Prueba gratis 30 días</option>';
+    if (act && [...sel.options].some(o => o.value === act)) sel.value = act;
+}
+async function cargarPlanes() {
+    const r = await api('getPlanes'); if (manejarSesion(r)) return;
+    planes = (r && r.planes) || [];
+    document.getElementById('contenedorPlanes').innerHTML = planes.length ? '<table style="width:100%;border-collapse:collapse;font-size:0.82rem"><tbody>' + planes.map(p =>
+        '<tr style="border-bottom:1px solid var(--borde)"><td style="padding:8px 4px"><span class="plan-tag ' + S.esc(p.codigo) + '">' + S.esc(p.nombre) + '</span>' + (p.destacado ? ' ⭐' : '') + (p.activo ? '' : ' (inactivo)') + '<div style="font-size:0.72rem;color:var(--gris);margin-top:3px;">' + S.esc(p.modulos.join(' · ')) + '</div></td>' +
+        '<td style="text-align:right;white-space:nowrap;padding:8px 4px">' + (p.codigo === 'PRUEBA' ? p.diasPrueba + ' días gratis' : S.fmt(p.mensual) + '/mes<br>' + S.fmt(p.anual) + '/año') + '</td></tr>').join('') + '</tbody></table>'
+        : '⚠️ No hay planes: ejecutá actualizarV4() en el Apps Script.';
+    renderClientes();
+}
+let pagoPx = '', pagoOp = null, borrPago = null;
+function abrirPago(px) {
+    const c = clientesCargados.find(x => x.prefijo === px); if (!c) return;
+    pagoPx = px; pagoOp = null;
+    llenarPlanes('pagoPlan', false);
+    document.getElementById('pagoInfo').textContent = px + ' · ' + (c.nombre || '') + ' · hoy: ' + nombrePlan(c.plan) + (c.fechaVence ? (c.vigente ? ', vence ' : ', venció ') + fechaAR(c.fechaVence) : ', sin vencimiento');
+    if (planes.some(p => p.codigo === c.plan && p.codigo !== 'PRUEBA')) document.getElementById('pagoPlan').value = c.plan;
+    document.getElementById('pagoFecha').value = S.hoy(); document.getElementById('pagoRef').value = ''; document.getElementById('pagoError').style.display = 'none';
+    document.getElementById('pagoCorreo').checked = !!c.correo; document.getElementById('pagoCorreo').disabled = !c.correo;
+    borrPago = S.borrador('pago_' + px, '#modalPago', { extra: () => ({ op: pagoOp }), alRestaurar: x => { pagoOp = x.op || null; } });
+    const rest = borrPago.restaurar();
+    pagoCambio(rest);
+    if (rest) toast('📝 Recuperé el pago que estabas cargando', 'verde');
+    document.getElementById('modalPago').classList.add('visible');
+}
+function pagoCambio(sinPisar) {
+    const p = planes.find(x => x.codigo === document.getElementById('pagoPlan').value), anual = document.getElementById('pagoPeriodo').value === 'ANUAL';
+    if (p && !(sinPisar === true && document.getElementById('pagoImporte').value)) document.getElementById('pagoImporte').value = String(anual ? p.anual : p.mensual).replace('.', ',');
+    const c = clientesCargados.find(x => x.prefijo === pagoPx); if (!c) return;
+    const fp = document.getElementById('pagoFecha').value || S.hoy(), base = c.fechaVence && c.fechaVence > fp ? c.fechaVence : fp;
+    const d = new Date(base + 'T12:00:00'), dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + (anual ? 12 : 1)); d.setDate(Math.min(dia, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    document.getElementById('pagoVence').textContent = '➜ Queda vigente hasta el ' + fechaAR(S.hoy(d));
+}
+function cerrarPago(cancelar) {
+    if (cancelar && borrPago && borrPago.hay() && !confirm('¿Descartar el pago que estabas cargando?')) return;
+    if (borrPago) { borrPago.borrar(); borrPago = null; }
+    document.getElementById('modalPago').classList.remove('visible'); pagoOp = null;
+}
+let pagando = false;
+async function confirmarPago() {
+    if (pagando) return;
+    const err = document.getElementById('pagoError'), btn = document.getElementById('btnPago'), v = id => document.getElementById(id).value.trim();
+    const imp = S.leerImporte(v('pagoImporte'));
+    if (imp === null || isNaN(imp) || imp < 0) { err.textContent = 'Importe inválido'; err.style.display = 'block'; return; }
+    if (!pagoOp) { pagoOp = S.nuevoOpId(); if (borrPago) borrPago.guardar(); }
+    pagando = true; btn.disabled = true; btn.textContent = 'Registrando...'; err.style.display = 'none';
+    const res = await api('registrarPago', { prefijo: pagoPx, plan: v('pagoPlan'), periodo: v('pagoPeriodo'), importe: imp, fechaPago: v('pagoFecha'), medio: v('pagoMedio'), referencia: v('pagoRef'), opId: pagoOp, enviarCorreo: document.getElementById('pagoCorreo').checked });
+    pagando = false; btn.disabled = false; btn.textContent = 'Registrar pago';
+    if (!res) { err.textContent = 'Sin respuesta: tocá Registrar de nuevo (no se duplica).'; err.style.display = 'block'; return; }
+    if (manejarSesion(res)) return;
+    if (!res.success) { if (res.definitivo) { pagoOp = null; if (borrPago) borrPago.guardar(); } err.textContent = res.error; err.style.display = 'block'; return; }
+    cerrarPago(false);
+    toast('✅ ' + (res.yaExistia ? 'Ya estaba registrado' : 'Pago registrado') + ': ' + nombrePlan(res.plan) + ' hasta el ' + fechaAR(res.fechaVence) + (res.correo ? (res.correo.enviado ? ' · ✉️ comprobante enviado' : ' · ⚠️ correo no enviado') : ''), 'verde');
+    if (res.correo && !res.correo.enviado) setTimeout(() => alert('El pago quedó registrado, pero el correo NO salió:\n\n' + res.correo.motivo), 300);
+    cargarClientes(); cargarCobros();
+}
+async function cargarCobros() {
+    const inp = document.getElementById('mesCobros'); if (!inp.value) inp.value = S.hoy().slice(0, 7);
+    const r = await api('getPagos', { mes: inp.value }), cont = document.getElementById('contenedorCobros');
+    if (!r) { cont.textContent = 'Error de conexión'; return; }
+    if (manejarSesion(r)) return;
+    if (r.error) { cont.textContent = r.error; return; }
+    cont.innerHTML = '<div style="font-size:1.4rem;font-weight:900;color:var(--azul-dark);margin-bottom:4px;">' + S.fmt(r.total) + '</div>' +
+        '<div style="margin-bottom:10px;">' + (Object.keys(r.porPlan).map(k => '<span class="plan-tag ' + S.esc(k) + '">' + S.esc(nombrePlan(k)) + ' ' + S.fmt(r.porPlan[k]) + '</span>').join(' ') || 'Sin cobros este mes') + '</div>' +
+        r.pagos.map(p => '<div class="cobro-row' + (p.estado !== 'ACTIVO' ? ' anulado' : '') + '"><div style="min-width:0;"><b>' + S.esc(p.prefijo) + '</b> · ' + S.esc(nombrePlan(p.plan)) + ' ' + S.esc(p.periodo.toLowerCase()) +
+            '<div style="font-size:0.72rem;color:var(--gris);">' + fechaAR(p.fechaPago) + ' · ' + S.esc(p.medio.toLowerCase()) + (p.referencia ? ' · ' + S.esc(p.referencia) : '') + ' · ' + S.esc(p.pagoId) + (p.estado !== 'ACTIVO' ? ' · ' + S.esc(p.motivo) : '') + '</div></div>' +
+            '<div style="text-align:right;white-space:nowrap;"><b>' + S.fmt(p.importe) + '</b>' + (p.estado === 'ACTIVO' ? '<br><button class="btn-accion" style="background:#FFEBEE;color:var(--rojo);margin-top:4px;" onclick="anularPago(\'' + S.esc(p.pagoId) + '\')">Anular</button>' : '') + '</div></div>').join('');
+}
+async function anularPago(id) {
+    const m = prompt('¿Por qué anulás el pago ' + id + '? (queda registrado, no se borra)'); if (m === null) return;
+    if (m.trim().length < 3) { toast('Escribí el motivo', 'rojo'); return; }
+    const r = await api('anularPago', { pagoId: id, motivo: m.trim() });
+    if (!r) { toast('Sin respuesta: reintentá (no se duplica)', 'rojo'); return; }
+    if (manejarSesion(r)) return;
+    if (!r.success) { alert(r.error); return; }
+    toast(r.yaEstaba ? 'Ya estaba anulado' : '✅ Anulado: ' + r.prefijo + ' vuelve a ' + nombrePlan(r.plan) + (r.fechaVence ? ' hasta el ' + fechaAR(r.fechaVence) : ''), 'verde');
+    cargarCobros(); cargarClientes();
+}
+async function cargarCorreo() {
+    const r = await api('estadoCorreo'), cont = document.getElementById('contenedorCorreo');
+    if (!r) { cont.textContent = 'Error de conexión'; return; }
+    if (manejarSesion(r)) return;
+    cont.innerHTML = '<div class="aviso-box ' + (r.puedeEnviar ? 'ok' : 'mal') + '">' + (r.puedeEnviar ? '✅ Los correos salen desde <b>' + S.esc(r.remitente) + '</b>' + (r.copiaOculta ? ', con copia oculta para vos' : '') + '.' + (r.cupoHoy !== null ? ' Quedan ' + r.cupoHoy + ' envíos hoy.' : '') : '⚠️ ' + S.esc(r.motivo) + ' Mientras tanto NO se manda ningún correo (las altas y los pagos funcionan igual).') + '</div>' +
+        (r.soporteWhatsapp ? '<div>📱 WhatsApp de soporte: <b>' + S.esc(r.soporteWhatsapp) + '</b></div>' : '<div class="aviso-box mal">⚠️ Falta el WhatsApp de soporte: completalo en la hoja AJUSTES (soporte_whatsapp).</div>') +
+        '<div style="margin-top:6px;font-size:0.78rem;">Remitente, copia oculta, WhatsApp y logos se cambian en la hoja AJUSTES.</div>';
+}
+async function enviarAcceso(px) {
+    const c = clientesCargados.find(x => x.prefijo === px); if (!c) return;
+    if (!c.correo) { alert(px + ' no tiene correo cargado. Agregalo en la hoja CLIENTES.'); return; }
+    if (!confirm('¿Mandar a ' + c.correo + ' un correo con usuario y un PIN NUEVO?\n\nEl PIN anterior deja de funcionar.')) return;
+    const r = await api('enviarAcceso', { prefijo: px });
+    if (!r) { toast('Sin respuesta: revisá si le llegó antes de repetir', 'rojo'); return; }
+    if (manejarSesion(r)) return;
+    if (!r.success) { alert('No se envió y el PIN NO cambió:\n\n' + r.error); return; }
+    alert(r.correo.enviado ? '✉️ Enviado a ' + c.correo + '.\n\nPIN nuevo: ' + r.pin : '⚠️ El PIN cambió (' + r.pin + ') pero el correo falló: ' + r.correo.motivo);
+}
+async function cargarAcuerdo() {
+    const r = await api('getAcuerdoAdmin'), cont = document.getElementById('contenedorAcuerdo');
+    if (!r) { cont.textContent = 'Error de conexión'; return; }
+    if (manejarSesion(r)) return;
+    const v = r.vigente;
+    cont.innerHTML = (v ? '<div class="aviso-box ok">Versión <b>' + v.version + '</b> publicada el ' + S.esc(v.fecha) + ' · la aceptaron ' + r.aceptaron.length + ' cliente(s)' + (r.faltan.length ? ' · falta: ' + S.esc(r.faltan.join(', ')) : '') + '</div>' : '<div class="aviso-box mal">No hay acuerdo publicado: los clientes cargan sin aceptar nada. Ejecutá actualizarV4() o publicá uno acá.</div>') +
+        '<textarea class="form-input" id="acuerdoTexto">' + S.esc(v ? v.texto : '') + '</textarea>' +
+        '<div style="font-size:0.75rem;margin:6px 0 10px;">Al publicar una versión nueva, a cada cliente se le pide aceptarla antes de seguir cargando. La anterior queda guardada.</div>' +
+        '<button class="btn-primario" onclick="publicarAcuerdo()">📄 Publicar versión nueva</button>';
+}
+async function publicarAcuerdo() {
+    const t = document.getElementById('acuerdoTexto').value;
+    if (!confirm('¿Publicar este texto como versión nueva?\n\nTodos los clientes lo van a tener que aceptar antes de seguir cargando.')) return;
+    const r = await api('publicarAcuerdo', { texto: t });
+    if (!r) { toast('Sin respuesta: reintentá', 'rojo'); return; }
+    if (manejarSesion(r)) return;
+    if (!r.success) { alert(r.error); return; }
+    toast(r.sinCambios ? 'No hubo cambios en el texto' : '✅ Versión ' + r.version + ' publicada', 'verde'); cargarAcuerdo();
 }
 let _toastTimer;
 function toast(msg, tipo) { const el = document.getElementById('toast'); el.textContent = msg; el.className = 'toast visible ' + (tipo || ''); clearTimeout(_toastTimer); _toastTimer = setTimeout(() => el.classList.remove('visible'), 4000); }

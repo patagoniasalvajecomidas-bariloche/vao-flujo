@@ -104,7 +104,7 @@ button { font-family:inherit; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 3;
+window.APP_VERSION = 4;
 const S = window.SEBA, PREFIJO = S.prefijo;
 document.getElementById('btnVolver').href = 'balance.html?p=' + PREFIJO;
 document.getElementById('headerSub').textContent = 'Reportes · ' + PREFIJO + ' · v' + APP_VERSION;
@@ -112,6 +112,7 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const DIAS_SEM = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const TIPO_TXT = { GASTO: 'Gasto', INGRESO: 'Ingreso', TRANSFERENCIA: 'Transferencia', DEUDA_ALTA: 'Deuda (alta)', PAGO_DEUDA: 'Pago de deuda' };
 
+let planR = null, soporteR = null, desbloqueaR = {}, presup = null, nombreCli = '';
 let movs = [], cuentas = [], mesActual = new Date().getMonth(), anioActual = new Date().getFullYear();
 let diasSel = new Set([S.hoy()]), filtroTipo = 'TODOS', filtroCuenta = 'TODAS', verAnulados = false;
 
@@ -123,7 +124,14 @@ async function cargar() {
     document.getElementById('appContent').innerHTML = '<div class="loading"><div class="spinner"></div><div>Cargando movimientos...</div></div>';
     const mm = String(mesActual + 1).padStart(2, '0');
     const desde = anioActual + '-' + mm + '-01', hasta = anioActual + '-' + mm + '-' + String(new Date(anioActual, mesActual + 1, 0).getDate()).padStart(2, '0');
-    const [r, e] = await Promise.all([S.api('getMovimientos', { desde, hasta }), cuentas.length ? Promise.resolve(null) : S.api('getEstado', {})]);
+    const [r, e] = await Promise.all([S.api('getMovimientos', { desde, hasta }), planR ? Promise.resolve(null) : S.api('getEstado', {})]);
+    if (e && e.success) { planR = e.plan; soporteR = e.soporte; desbloqueaR = e.desbloquea || {}; nombreCli = e.nombre || ''; }
+    if (r && r.moduloNoHabilitado) { document.getElementById('appContent').innerHTML = S.htmlBloqueo({ error: r.error, whatsapp: soporteR && soporteR.whatsapp }, nombreCli); return; }
+    presup = null;
+    if (r && r.success && planR && planR.modulos.indexOf('PRESUPUESTOS') !== -1) {
+        const pr = await S.api('getPresupuestos', { periodo: anioActual + '-' + mm });
+        if (pr && pr.success) presup = pr;
+    }
     if (!r) { document.getElementById('appContent').innerHTML = '<div class="loading" style="color:var(--rojo);">❌ Sin conexión.<br><br><button class="btn-accion" style="max-width:200px" onclick="cargar()">🔄 Reintentar</button></div>'; return; }
     if (r.sesion) { S.setToken(''); sinSesion('🔒 ' + r.error); return; }
     if (r.error) { sinSesion('❌ ' + r.error); return; }
@@ -206,9 +214,55 @@ function render() {
         '<div class="res-fila"><span>Ingresos <b>' + S.fmt(ing) + '</b></span><span>Diferencia <b>' + S.fmt(Math.round((ing - gas) * 100) / 100) + '</b></span></div>' +
         '<div class="res-dias">' + (n === 0 ? 'Ningún día seleccionado' : n === 1 ? '1 día' : n + ' días') + ' · ' + new Set(sel.map(m => m.movId)).size + ' operaciones</div></div>' +
         barras(porCat, '📂 Gastos por categoría') + barras(porCon, '🏆 Gastos por concepto') + barras(porProdNom, '🛒 Productos más comprados') + barras(ingCat, '💵 Ingresos por concepto') +
+        htmlPremium() +
         (Object.keys(porCta).length ? '<div class="tarjeta"><div class="tarjeta-titulo">💼 Por cuenta</div>' + Object.entries(porCta).map(([c, v]) => '<div class="metodo-row"><span class="metodo-nombre">' + S.esc(nombreCta(c)) + '</span><span class="metodo-monto"><span style="color:var(--rojo)">−' + S.fmt(v.g) + '</span> · <span style="color:var(--verde)">+' + S.fmt(v.i) + '</span></span></div>').join('') + '</div>' : '') +
         (diasOrd.length ? '<div class="seccion-titulo" style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;">📋 Detalle por día <label style="text-transform:none;letter-spacing:0;font-weight:500;"><input type="checkbox" ' + (verAnulados ? 'checked' : '') + ' onchange="verAnulados=this.checked;render()"> ver anulados</label></div>' + detalle : '') +
         '</div><div class="pb"></div>';
+}
+// ── v4 Premium: presupuestos por categoría y exportar ──
+let verTodosPres = false;
+function htmlPremium() {
+    const mods = planR ? planR.modulos : [];
+    let h = '';
+    if (presup) {
+        const con = presup.items.filter(i => i.monto > 0), lista = verTodosPres ? presup.items : con;
+        h += '<div class="tarjeta"><div class="tarjeta-titulo" style="display:flex;justify-content:space-between;align-items:center;">🎯 Presupuesto del mes <button class="chip" onclick="verTodosPres=!verTodosPres;render()">' + (verTodosPres ? 'Listo' : '✎ Editar') + '</button></div>' +
+            (lista.length ? lista.map((i, k) => {
+                const pct = i.monto > 0 ? Math.round(i.gastado / i.monto * 100) : 0, color = pct >= 100 ? 'var(--rojo)' : pct >= 80 ? 'var(--naranja)' : 'var(--verde)';
+                return '<div class="prod-row" style="cursor:pointer" onclick="editarPresupuesto(' + presup.items.indexOf(i) + ')"><div class="prod-header"><span class="prod-nombre">' + S.esc(i.categoria) + '</span><span class="prod-detalle">' +
+                    (i.monto > 0 ? S.fmt(i.gastado) + ' de ' + S.fmt(i.monto) + ' · <b style="color:' + color + '">' + pct + '%</b>' : 'sin presupuesto · tocá para poner') + '</span></div>' +
+                    (i.monto > 0 ? '<div class="barra-bg"><div class="barra-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div>' : '') + '</div>';
+            }).join('') : '<div class="empty" style="padding:10px">Todavía no pusiste presupuestos. Tocá ✎ Editar.</div>') + '</div>';
+    }
+    if (mods.indexOf('EXPORTAR') !== -1) h += '<button class="btn-accion" style="width:100%;margin-bottom:10px;padding:11px;" onclick="exportar()">⬇️ Exportar todos mis movimientos (planilla)</button>';
+    const faltan = ['PRESUPUESTOS', 'EXPORTAR'].filter(m => mods.indexOf(m) === -1);
+    if (planR && faltan.length) h += '<div class="tarjeta" style="color:var(--gris);font-size:0.8rem;">🔒 Presupuestos por categoría y exportar a planilla: plan ' + S.esc(desbloqueaR[faltan[0]] || 'Premium') + '.</div>';
+    return h;
+}
+async function editarPresupuesto(idx) {
+    const i = presup && presup.items[idx]; if (!i) return;
+    const t = prompt('Presupuesto mensual para ' + i.categoria + ' (0 = sin presupuesto):', i.monto ? String(i.monto).replace('.', ',') : '');
+    if (t === null) return;
+    const n = t.trim() === '' ? 0 : S.leerImporte(t);
+    if (n === null || isNaN(n) || n < 0) { S.toast('Monto inválido', 'rojo'); return; }
+    const r = await S.api('guardarPresupuesto', { categoria: i.categoria, monto: n });
+    if (!r || !r.success) { S.toast(S.motivo(r, 'Probá de nuevo.'), 'rojo', 4000); return; }
+    i.monto = n; S.toast('✅ Presupuesto guardado', 'verde'); render();
+}
+async function exportar() {
+    S.toast('⏳ Preparando la planilla...', '', 2000);
+    const r = await S.api('exportarMovimientos', {});
+    if (!r || !r.success) { S.toast(S.motivo(r, 'Probá de nuevo.'), 'rojo', 4000); return; }
+    const num = n => String(n).replace('.', ',');
+    const cel = v => { const t = String(v == null ? '' : v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const filas = [['Fecha', 'Tipo', 'Categoría', 'Concepto', 'Detalle', 'Importe', 'Cuenta', 'Cuenta destino', 'Estado', 'Motivo anulación', 'Boleta', 'Cargado']]
+        .concat(r.movimientos.map(m => [m.fecha, m.tipo, m.categoria, m.concepto, m.descripcion, num(m.importe), m.cuentaNombre, m.cuentaDestinoNombre, m.estado, m.motivo, m.movId, m.fechaRegistro]));
+    const csv = '\ufeff' + filas.map(f => f.map(cel).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'SEBA_BALANCE_' + PREFIJO + '_' + S.hoy() + '.csv';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    S.toast('✅ Descargado: ' + r.movimientos.length + ' movimientos', 'verde');
 }
 function toggleDia(ds) { diasSel.has(ds) ? diasSel.delete(ds) : diasSel.add(ds); render(); }
 function cambiarMes(d) { mesActual += d; if (mesActual < 0) { mesActual = 11; anioActual--; } if (mesActual > 11) { mesActual = 0; anioActual++; } diasSel.clear(); cargar(); }

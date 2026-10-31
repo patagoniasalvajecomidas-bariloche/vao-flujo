@@ -33,6 +33,9 @@
   button#entrar:active{ background:var(--green-active); transform:translateY(1px); }
   .admin-row{ text-align:center; margin-top:26px; } .admin-row span{ color:var(--muted); font-size:13px; }
   a.admin-link{ color:var(--muted); font-size:13px; text-decoration:underline; text-underline-offset:2px; }
+  .paso{ font-size:12px; color:var(--accent); letter-spacing:.08em; margin-bottom:10px; text-transform:uppercase; }
+  .paso b{ color:var(--text); }
+  .ayuda-pin{ font-size:12px; color:var(--muted); margin-top:10px; }
   .version-tag{ position:fixed; right:10px; bottom:8px; font-size:11px; color:#3a4652; }
   .aviso-cfg{ background:#3a2a10; border:1px solid #7a5a20; color:#ffcc80; border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:14px; display:none; }
 </style>
@@ -48,9 +51,11 @@
     <div class="panel">
       <div class="aviso-cfg" id="avisoCfg">⚠️ Falta configurar la dirección del servidor en <b>seba-config.js</b>.</div>
       <form id="form-entrada" novalidate>
-        <label for="codigo">Ingresá tu código de cliente (ej: XX)</label>
-        <input type="text" id="codigo" name="codigo" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XX">
-        <div class="error-slot" aria-live="polite"><p id="error-msg" hidden>Código inválido (2 o 3 letras)</p></div>
+        <div class="paso">Paso 1 de 2 · <b>USUARIO</b></div>
+        <label for="codigo">Tu usuario: <b>2 o 3 letras</b> (ej: SE)</label>
+        <input type="text" id="codigo" name="usuario" maxlength="3" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="Ej: SE">
+        <div class="ayuda-pin">🔒 El PIN (6 números) se pide en el paso siguiente.</div>
+        <div class="error-slot" aria-live="polite"><p id="error-msg" hidden>Usuario inválido: son 2 o 3 letras</p></div>
         <button type="submit" id="entrar">Entrar</button>
       </form>
     </div>
@@ -66,15 +71,26 @@
   const form = document.getElementById('form-entrada'), input = document.getElementById('codigo'), errorMsg = document.getElementById('error-msg');
   try { const ult = localStorage.getItem('seba_ultimo_prefijo'); if (ult) input.value = ult; } catch (e) {}
   function mostrarError(m) { errorMsg.hidden = !m; input.classList.toggle('invalid', m); }
+  // Si escribe números acá, casi seguro es el PIN en el lugar equivocado: avisar y borrarlo (no queda guardado).
+  function revisarNumeros() {
+    if (/\d/.test(input.value)) {
+      input.value = '';
+      errorMsg.textContent = 'Eso parece tu PIN 🔒. Acá va tu USUARIO (letras, ej: SE). El PIN te lo pide después.';
+      mostrarError(true);
+      return true;
+    }
+    return false;
+  }
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (revisarNumeros()) return;
     const v = input.value.trim();
-    if (!/^[A-Za-z]{2,3}$/.test(v)) { mostrarError(true); input.focus(); return; }
+    if (!/^[A-Za-z]{2,3}$/.test(v)) { errorMsg.textContent = 'Usuario inválido: son 2 o 3 letras (ej: SE)'; mostrarError(true); input.focus(); return; }
     mostrarError(false);
     try { localStorage.setItem('seba_ultimo_prefijo', v.toUpperCase()); } catch (e) {}
     window.location.href = 'balance.html?p=' + v.toUpperCase();
   });
-  input.addEventListener('input', function () { if (!errorMsg.hidden) mostrarError(false); });
+  input.addEventListener('input', function () { if (revisarNumeros()) return; if (!errorMsg.hidden) mostrarError(false); });
 </script>
 </body>
 </html>

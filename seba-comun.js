@@ -43,6 +43,16 @@
     } finally { if (timer) clearTimeout(timer); }
   };
 
+  // ── v4: pantalla de "esto no está en tu plan" (para páginas enteras como Reportes o Deudas) ──
+  S.htmlBloqueo = function (r, nombreCliente) {
+    var w = String(r && r.whatsapp || '').replace(/\D/g, '');
+    var wa = w ? 'https://wa.me/' + w + '?text=' + encodeURIComponent('Hola, soy ' + (nombreCliente || S.prefijo) + ' (' + S.prefijo + '). Quiero mejorar mi plan de SEBA BALANCE.') : '';
+    return '<div style="text-align:center;padding:50px 22px;color:#3d3244;font-family:inherit">' +
+      '<div style="font-size:2.4rem">🔒</div><div style="font-weight:900;font-size:1.1rem;margin:10px 0 8px">' + S.esc(r && r.error || 'No está en tu plan') + '</div>' +
+      (wa ? '<a href="' + wa + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:900;padding:12px 22px;border-radius:30px">Quiero mejorar mi plan</a><br>' : '') +
+      '<a href="balance.html?p=' + S.prefijo + '" style="display:inline-block;margin-top:16px;color:#0D47A1;font-weight:700">← Volver</a></div>';
+  };
+
   // ── formatos ──
   S.fmt = function (n) {
     n = Number(n) || 0;
@@ -218,6 +228,16 @@
       }
     };
   };
+
+  // ── Sin "tirar para recargar" (sugerencia de Sebastián, 15/10/2026) ──
+  // En el celular, al bajar una lista que ya estaba arriba de todo, el navegador recargaba la página.
+  // overscroll-behavior lo desactiva en toda la app; las listas internas no "empujan" a la página.
+  (function () {
+    var st = document.createElement('style');
+    st.textContent = 'html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}' +
+      '#listaVenta,#listaTodosWrap,.modal-body,.modal-sheet,.buscador-resultados,.chips,.sb-sheet,.tk-sheet,.modal{overscroll-behavior:contain}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
 
   // ── marca STAGING (igual que VAO POS) ──
   if (CFG.ENTORNO !== 'produccion') {

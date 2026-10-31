@@ -39,6 +39,35 @@ button { font-family:inherit; }
 .btn-tool.hoy { background:rgba(90,158,111,0.75); }
 .btn-tool.stats { background:rgba(90,158,111,0.9); }
 .btn-tool.cerrar { background:rgba(214,66,66,0.6); }
+.btn-tool.bloq { opacity:.5; }
+.btn-tool.bloq i::after { content:'🔒'; font-size:0.6rem; margin-left:1px; }
+/* ===== PLAN / ACUERDO (v4) ===== */
+.aviso-plan { margin-top:5px; font-size:0.74rem; font-weight:700; border-radius:10px; padding:5px 10px; cursor:pointer; display:none; background:#e8f5e9; color:#2e7d32; }
+.aviso-plan.alerta { background:#fff3e0; color:#b35a00; }
+.aviso-plan.vencido { background:#fdecec; color:var(--rojo); }
+.plan-actual { margin:12px 14px; border-radius:16px; padding:14px 16px; background:linear-gradient(135deg,#0A2472,var(--lavanda)); color:white; }
+.plan-actual .t { font-size:0.7rem; opacity:.8; text-transform:uppercase; letter-spacing:1px; }
+.plan-actual .n { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:900; }
+.plan-actual .d { font-size:0.82rem; opacity:.9; margin-top:4px; }
+.upsell { margin:0 14px 10px; padding:10px 12px; border-radius:12px; background:#fff3e0; color:#8a4b00; font-size:0.85rem; font-weight:700; }
+.plan-card { margin:10px 14px; border:2px solid var(--lavanda-light); border-radius:16px; padding:14px; position:relative; }
+.plan-card.dest { border-color:var(--naranja); }
+.plan-card.mio { border-color:var(--verde); }
+.plan-card .cinta { position:absolute; top:-10px; right:14px; background:var(--naranja); color:white; font-size:0.66rem; font-weight:900; padding:3px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.5px; }
+.plan-card .cinta.v { background:var(--verde); }
+.plan-card .pn { font-weight:900; font-size:1.05rem; color:var(--lavanda-dark); }
+.plan-card .pp { font-size:1.4rem; font-weight:900; margin:4px 0 2px; }
+.plan-card .pp small { font-size:0.75rem; font-weight:500; color:var(--gris); }
+.plan-card .pa { font-size:0.78rem; color:var(--verde); font-weight:700; }
+.plan-card .pd { font-size:0.8rem; color:var(--gris); margin:8px 0; line-height:1.4; }
+.plan-card .pm { font-size:0.75rem; line-height:1.6; }
+.btn-wa { display:block; text-align:center; text-decoration:none; padding:11px; border-radius:50px; background:#25D366; color:white; font-weight:900; font-size:0.9rem; margin-top:10px; }
+#overlayAcuerdo { position:fixed; inset:0; z-index:4500; background:var(--blanco); display:none; flex-direction:column; }
+#overlayAcuerdo .ac-head { background:linear-gradient(135deg,#0A2472,#1E88E5); color:white; padding:14px 18px; flex-shrink:0; }
+#overlayAcuerdo .ac-head .t { font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:900; }
+#overlayAcuerdo .ac-head .s { font-size:0.75rem; opacity:.85; }
+#overlayAcuerdo .ac-texto { flex:1; min-height:0; overflow-y:auto; padding:16px 18px; white-space:pre-wrap; font-size:0.9rem; line-height:1.5; overscroll-behavior:contain; }
+#overlayAcuerdo .ac-pie { flex-shrink:0; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); border-top:1px solid #ede8f5; background:white; }
 
 /* ===== FRANJA SALDOS ===== */
 .franja { background:white; padding:8px 12px 6px; border-bottom:1px solid #ede8f5; flex-shrink:0; }
@@ -181,13 +210,25 @@ button { font-family:inherit; }
 <body>
 
 <!-- OVERLAY PIN (igual que VAO POS) -->
+<!-- ACUERDO DE USO (v4): se acepta una vez por versión -->
+<div id="overlayAcuerdo">
+    <div class="ac-head"><div class="t">Acuerdo de uso</div><div class="s" id="acSub">Leelo y aceptalo para empezar a cargar</div></div>
+    <div class="ac-texto" id="acTexto"></div>
+    <div class="ac-pie">
+        <label class="check" style="margin-bottom:10px;"><input type="checkbox" id="acCheck" onchange="document.getElementById('acBtn').disabled=!this.checked"> Leí y acepto el Acuerdo de uso</label>
+        <div class="form-error" id="acError"></div>
+        <button class="btn-guardar" id="acBtn" disabled onclick="aceptarAcuerdo()">Aceptar y empezar</button>
+        <button class="btn-sec" style="margin-bottom:0;" onclick="irAlInicio()">Ahora no (salir)</button>
+    </div>
+</div>
+
 <div id="overlayPin">
     <div style="width:100%;max-width:320px;text-align:center;color:white;">
         <img src="logo-se-isotipo.svg" alt="" style="height:56px;margin-bottom:6px;" onerror="this.style.display='none'">
         <div id="overlayPinTitulo" style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;margin-bottom:4px;">Verificando sesión...</div>
         <div id="overlayPinSub" style="font-size:0.8rem;opacity:0.75;margin-bottom:24px;">SEBA BALANCE</div>
         <div id="overlayPinForm" style="display:none;">
-            <input type="password" id="overlayPinInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="PIN de 6 dígitos" autocomplete="off"
+            <input type="password" id="overlayPinInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="PIN: 6 números" autocomplete="off"
                    onkeydown="if(event.key==='Enter')intentarLoginPin()"
                    style="width:100%;padding:16px;border:none;border-radius:12px;font-size:1.4rem;text-align:center;letter-spacing:0.4em;outline:none;margin-bottom:14px;font-family:'DM Sans',sans-serif;">
             <div id="overlayPinError" style="color:#ffcdd2;font-size:0.85rem;min-height:18px;margin-bottom:10px;"></div>
@@ -219,11 +260,11 @@ button { font-family:inherit; }
 
 <!-- TOOLBAR -->
 <div class="toolbar">
-    <button class="btn-tool ingreso" onclick="abrirCatalogo()"><i>📚</i>Catálogo</button>
-    <button class="btn-tool" onclick="abrirTransferir()"><i>🔁</i>Transf.</button>
-    <button class="btn-tool hoy" onclick="abrirHoy()"><i>📋</i>Hoy</button>
-    <button class="btn-tool stats" onclick="irA('reportes.html')"><i>📊</i>Reportes</button>
-    <button class="btn-tool" onclick="irA('deudas.html')"><i>🧾</i>Deudas</button>
+    <button class="btn-tool ingreso" data-mod="CATALOGO" onclick="usar('CATALOGO', abrirCatalogo)"><i>📚</i>Catálogo</button>
+    <button class="btn-tool" data-mod="TRANSFERENCIAS" onclick="usar('TRANSFERENCIAS', abrirTransferir)"><i>🔁</i>Transf.</button>
+    <button class="btn-tool hoy" data-mod="HOY" onclick="usar('HOY', abrirHoy)"><i>📋</i>Hoy</button>
+    <button class="btn-tool stats" data-mod="REPORTES" onclick="usar('REPORTES', () => irA('reportes.html'))"><i>📊</i>Reportes</button>
+    <button class="btn-tool" data-mod="DEUDAS" onclick="usar('DEUDAS', () => irA('deudas.html'))"><i>🧾</i>Deudas</button>
     <button class="btn-tool cerrar" onclick="irAlInicio()"><i>🚪</i>Salir</button>
 </div>
 
@@ -238,6 +279,7 @@ button { font-family:inherit; }
     </div>
     <div class="chips" id="chipsCuentas"></div>
     <div class="aviso-comp" id="avisoComp" onclick="irA('deudas.html','#compromisos')"></div>
+    <div class="aviso-plan" id="avisoPlan" onclick="abrirPlan()"></div>
 </div>
 
 <!-- BUSCADOR -->
@@ -366,6 +408,15 @@ button { font-family:inherit; }
     </div>
 </div>
 
+<!-- ===== MODAL MI PLAN (v4) ===== -->
+<div class="modal-bg" id="modalPlan" onclick="if(event.target===this)cerrarModal()">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header"><span class="modal-titulo">⭐ Mi plan</span><button class="modal-cerrar" onclick="cerrarModal()">✕</button></div>
+        <div class="modal-body" id="planContenido"></div>
+    </div>
+</div>
+
 <!-- ===== MODAL CUENTAS ===== -->
 <div class="modal-bg" id="modalCuentas" onclick="if(event.target===this)cerrarModal()">
     <div class="modal-sheet">
@@ -378,7 +429,7 @@ button { font-family:inherit; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 3;
+window.APP_VERSION = 4;
 window.SEBA_BADGE_BOTTOM = 84;
 const S = window.SEBA;
 const PREFIJO = S.prefijo;
@@ -417,7 +468,7 @@ function irAlInicio() {
 function mostrarFormularioPin(msg) {
     document.getElementById('overlayPin').style.display = 'flex';
     document.getElementById('overlayPinTitulo').textContent = 'Ingresá tu PIN';
-    document.getElementById('overlayPinSub').textContent = PREFIJO;
+    document.getElementById('overlayPinSub').innerHTML = 'Paso 2 de 2 · Usuario: <b>' + S.esc(PREFIJO) + '</b> · <a href="index.html" style="color:white;">cambiar</a>';
     document.getElementById('overlayPinForm').style.display = 'block';
     document.getElementById('overlayPinRed').style.display = 'none';
     document.getElementById('overlayPinError').textContent = msg || '';
@@ -481,7 +532,7 @@ async function cargarEstado(silencioso) {
     renderTodo();
     return true;
 }
-function renderTodo() { renderModo(); renderFranja(); renderBoleta(); if (listaAbierta) renderListaTodos(); }
+function renderTodo() { renderModo(); renderFranja(); renderBotonera(); renderAvisoPlan(); renderBoleta(); if (listaAbierta) renderListaTodos(); revisarAcuerdo(); }
 // Al cambiar GASTOS/INGRESOS se vuelve al primer paso.
 function navInicio() { nav = { nivel: 'cats' }; }
 
@@ -497,6 +548,72 @@ function renderFranja() {
         av.textContent = '⏰ ' + comp.length + (comp.length === 1 ? ' compromiso pendiente' : ' compromisos pendientes') + ' este mes' + (venc ? ' · ' + venc + ' vencido' + (venc > 1 ? 's' : '') : '') + ' ›';
         av.style.display = 'block';
     } else av.style.display = 'none';
+}
+
+// ========== PLAN (v4): botonera según el plan, vigencia y acuerdo ==========
+const NOMBRE_MODULO = { BOLETA: 'Boleta de gastos e ingresos', HOY: 'Resumen de hoy', CATALOGO: 'Catálogo editable', CUENTAS: 'Cuentas y saldos',
+    TRANSFERENCIAS: 'Transferencias entre cuentas', REPORTES: 'Reportes del mes', DEUDAS: 'Deudas y compromisos', PRODUCTOS: 'Listas de productos (súper, farmacia...)',
+    PRESUPUESTOS: 'Presupuestos por categoría', EXPORTAR: 'Exportar a planilla' };
+function tieneMod(m) { return !estado || !estado.plan || estado.plan.modulos.indexOf(m) !== -1; }
+function usar(mod, fn) { if (!tieneMod(mod)) { abrirPlan(mod); return; } fn(); }
+function soloLectura() { return !!(estado && estado.plan && estado.plan.soloLectura); }
+function renderBotonera() {
+    document.querySelectorAll('.btn-tool[data-mod]').forEach(b => { const ok = tieneMod(b.dataset.mod); b.classList.toggle('bloq', !ok); b.title = ok ? '' : 'No está en tu plan'; });
+    if (estado && estado.plan) document.getElementById('headerSub').textContent = 'SEBA BALANCE · v' + APP_VERSION + ' · ' + estado.plan.nombre;
+}
+function fechaAR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
+function renderAvisoPlan() {
+    const av = document.getElementById('avisoPlan');
+    const pl = estado && estado.plan;
+    if (!pl) { av.style.display = 'none'; return; }
+    av.className = 'aviso-plan';
+    if (pl.soloLectura) { av.classList.add('vencido'); av.textContent = '🔒 Tu plan venció: modo consulta (podés mirar, no cargar) · Renovar ›'; }
+    else if (pl.prueba) { if (pl.dias !== null && pl.dias <= 5) av.classList.add('alerta'); av.textContent = '🎁 Prueba gratis: ' + (pl.dias === 0 ? 'vence hoy' : 'te quedan ' + pl.dias + ' día' + (pl.dias === 1 ? '' : 's')) + ' · Ver planes ›'; }
+    else if (pl.dias !== null && pl.dias <= 5) { av.classList.add('alerta'); av.textContent = '⏰ Tu plan ' + pl.nombre + ' vence ' + (pl.dias === 0 ? 'hoy' : 'en ' + pl.dias + ' día' + (pl.dias === 1 ? '' : 's')) + ' · Renovar ›'; }
+    else { av.style.display = 'none'; return; }
+    av.style.display = 'block';
+}
+function linkWA(texto) { const w = String(estado && estado.soporte && estado.soporte.whatsapp || '').replace(/\D/g, ''); return w ? 'https://wa.me/' + w + '?text=' + encodeURIComponent(texto) : ''; }
+function abrirPlan(mod) {
+    if (!estado || !estado.plan) { S.toast('Sin conexión: el plan se ve con internet', 'rojo'); return; }
+    const pl = estado.plan, nombreCli = document.getElementById('headerTitulo').textContent;
+    let h = '<div class="plan-actual"><div class="t">Tu plan</div><div class="n">' + S.esc(pl.nombre) + '</div><div class="d">' +
+        (pl.soloLectura ? '🔒 Venció el ' + fechaAR(pl.vence) + ': modo consulta. Ves todo, pero para cargar hay que renovar. No se borra nada.'
+            : pl.vence ? (pl.prueba ? '🎁 Prueba gratis con todas las funciones hasta el ' : 'Vigente hasta el ') + fechaAR(pl.vence) + (pl.dias !== null ? ' (' + (pl.dias === 0 ? 'vence hoy' : pl.dias + ' día' + (pl.dias === 1 ? '' : 's')) + ')' : '')
+            : 'Sin vencimiento') + '</div></div>';
+    if (mod && NOMBRE_MODULO[mod]) h += '<div class="upsell">🔒 ' + S.esc(NOMBRE_MODULO[mod]) + ' no está en tu plan' + (estado.desbloquea && estado.desbloquea[mod] ? ': lo tenés en el plan ' + S.esc(estado.desbloquea[mod]) + '.' : '.') + '</div>';
+    h += (estado.planes || []).map(p => {
+        const mio = p.codigo === pl.codigo, ahorro = p.mensual > 0 ? Math.round((1 - p.anual / (p.mensual * 12)) * 100) : 0;
+        const wa = linkWA('Hola, soy ' + nombreCli + ' (' + PREFIJO + '). Quiero ' + (mio ? 'renovar' : 'pasarme a') + ' el plan ' + p.nombre + ' de SEBA BALANCE.');
+        return '<div class="plan-card' + (p.destacado ? ' dest' : '') + (mio ? ' mio' : '') + '">' + (mio ? '<span class="cinta v">Tu plan</span>' : p.destacado ? '<span class="cinta">Más elegido</span>' : '') +
+            '<div class="pn">' + S.esc(p.nombre) + '</div><div class="pp">' + S.fmt(p.mensual) + ' <small>por mes</small></div>' +
+            '<div class="pa">o ' + S.fmt(p.anual) + ' por año' + (ahorro > 0 ? ' (ahorrás ' + ahorro + '%)' : '') + '</div><div class="pd">' + S.esc(p.descripcion) + '</div>' +
+            '<div class="pm">' + p.modulos.map(m => (pl.modulos.indexOf(m) !== -1 || mio ? '✔ ' : '＋ ') + S.esc(NOMBRE_MODULO[m] || m)).join('<br>') + '</div>' +
+            (wa ? '<a class="btn-wa" target="_blank" rel="noopener" href="' + wa + '">' + (mio ? 'Renovar por WhatsApp' : 'Quiero este plan') + '</a>' : '') + '</div>';
+    }).join('');
+    if (!linkWA('x')) h += '<div class="vacio-txt" style="padding-bottom:16px;">Para contratar o renovar, escribile a VAO Sistemas.</div>';
+    h += '<div style="height:14px"></div>';
+    document.getElementById('planContenido').innerHTML = h;
+    abrirModal('modalPlan');
+}
+// Acuerdo de uso: aparece hasta aceptar la versión vigente.
+function revisarAcuerdo() {
+    const ac = estado && estado.acuerdoPendiente, ov = document.getElementById('overlayAcuerdo'), badge = document.getElementById('sebaStagingBadge');
+    if (badge) badge.style.display = ac ? 'none' : '';   // que la marca STAGING no tape el botón Aceptar
+    if (!ac) { ov.style.display = 'none'; return; }
+    document.getElementById('acTexto').textContent = ac.texto;
+    document.getElementById('acSub').textContent = 'Versión ' + ac.version + ' · leelo y aceptalo para empezar a cargar';
+    document.getElementById('acCheck').checked = false; document.getElementById('acBtn').disabled = true; document.getElementById('acError').textContent = '';
+    ov.style.display = 'flex';
+}
+async function aceptarAcuerdo() {
+    const ac = estado && estado.acuerdoPendiente; if (!ac || enviando) return;
+    const btn = document.getElementById('acBtn'); enviando = true; btn.disabled = true; btn.textContent = '⏳ Guardando...';
+    const r = await S.api('aceptarAcuerdo', { version: ac.version, opId: S.nuevoOpId(), navegador: navigator.userAgent.slice(0, 200) });
+    enviando = false; btn.textContent = 'Aceptar y empezar'; btn.disabled = !document.getElementById('acCheck').checked;
+    if (r && r.success) { estado.acuerdoPendiente = null; document.getElementById('overlayAcuerdo').style.display = 'none'; S.toast('✅ ¡Listo! Ya podés cargar', 'verde'); cargarEstado(true); return; }
+    document.getElementById('acError').textContent = r && r.definitivo ? '❌ ' + r.error : S.motivo(r, 'Tocá Aceptar de nuevo.');
+    if (r && r.definitivo) cargarEstado(true);
 }
 
 // ========== GASTO / INGRESO ==========
@@ -811,6 +928,7 @@ function cuentaBotones(contId, sel, onclickFn, deshabilitado) {
 function fijarFecha(dias) { const d = new Date(); d.setDate(d.getDate() + dias); if (!enCurso()) document.getElementById('confirmFecha').value = S.hoy(d); }
 function elegirCuenta(cod) { if (enCurso()) return; cuentaSel = cod; S.ls.set('seba_ultima_cuenta_' + PREFIJO + '_' + boleta.tipo, cod); cuentaBotones('confirmCuentas', cuentaSel, 'elegirCuenta'); }
 function abrirConfirm() {
+    if (soloLectura() && !enCurso()) { abrirPlan(); S.toast('🔒 Tu plan venció: renová para seguir cargando', 'rojo', 3500); return; }
     const c = enCurso();
     const items = c ? c.items : boleta.items;
     if (!items.length) { S.toast('Agregá al menos un renglón', 'rojo'); return; }
@@ -866,6 +984,13 @@ async function confirmarBoleta() {
         S.ls.del(K_CURSO);
         boleta = { tipo: c.tipo, items: c.items }; guardarBoleta();
         renderBoleta(); cerrarModal();
+        if (r.soloLectura || r.moduloNoHabilitado || r.acuerdoPendiente) {
+            // No es un error de la boleta: es el plan o el acuerdo. La boleta queda guardada para cuando se resuelva.
+            await cargarEstado(true);
+            if (!r.acuerdoPendiente) abrirPlan(r.modulo);
+            S.toast('❌ ' + r.error, 'rojo', 5000);
+            return;
+        }
         alert('No se registró la boleta.\n\n' + (r.error || '') + '\n\nCorregí la boleta y volvé a registrar.');
         cargarEstado(true);
         return;
