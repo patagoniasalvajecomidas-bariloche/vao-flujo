@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>SEBA BALANCE · VAO Sistemas</title>
 <link rel="icon" type="image/svg+xml" href="logo-se-isotipo.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0D47A1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SEBA STG">
 <style>
   :root{ --bg:#141A22; --panel:#1B2431; --panel-border:#2A3542; --text:#eef2f0; --muted:#90A0AF; --accent:#FF9800;
          --green:#2CCB6F; --green-hover:#34e07d; --green-active:#23b25e; --blue:#0078FF; --error:#e2665a; }
@@ -59,13 +66,18 @@
         <button type="submit" id="entrar">Entrar</button>
       </form>
     </div>
+    <!-- v5 (VAO POS V33): app instalable. Android/Chrome: botón. iPhone: Compartir → Agregar a inicio. -->
+    <button type="button" id="btnInstalarApp" onclick="instalarApp()" style="display:none;width:100%;margin-top:16px;padding:13px;border:none;border-radius:999px;background:#2CCB6F;color:#0E1A12;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;">📲 Instalar app en este celular</button>
+    <div id="guiaIphone" style="display:none;margin-top:16px;padding:12px 14px;border-radius:12px;background:rgba(44,203,111,.12);border:1px solid rgba(44,203,111,.45);font-size:13px;line-height:1.45;text-align:left;">
+      📲 <b>Para tenerla como app en el iPhone:</b> en Safari tocá <b>Compartir</b> (el cuadrado con la flecha ⬆️) y después <b>“Agregar a inicio”</b>.
+    </div>
     <div class="admin-row"><span>¿Sos administrador?</span> <a class="admin-link" href="admin.html">Acceso aquí</a></div>
   </div>
   <span class="version-tag" id="version-tag"></span>
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-  window.APP_VERSION = 3;
+  window.APP_VERSION = 5;
   document.getElementById('version-tag').textContent = 'v' + APP_VERSION;
   if (!SEBA.configurado) document.getElementById('avisoCfg').style.display = 'block';
   const form = document.getElementById('form-entrada'), input = document.getElementById('codigo'), errorMsg = document.getElementById('error-msg');
@@ -91,6 +103,21 @@
     window.location.href = 'balance.html?p=' + v.toUpperCase();
   });
   input.addEventListener('input', function () { if (revisarNumeros()) return; if (!errorMsg.hidden) mostrarError(false); });
+
+  // v5 (VAO POS V33): service worker mínimo, NO guarda copias (siempre carga la última versión publicada)
+  if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  var _eventoInstalar = null;
+  var yaInstalada = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); _eventoInstalar = e; if (!yaInstalada) document.getElementById('btnInstalarApp').style.display = 'block'; });
+  window.addEventListener('appinstalled', function () { document.getElementById('btnInstalarApp').style.display = 'none'; _eventoInstalar = null; });
+  async function instalarApp() {
+    if (!_eventoInstalar) return;
+    _eventoInstalar.prompt();
+    try { await _eventoInstalar.userChoice; } catch (e) {}
+    _eventoInstalar = null; document.getElementById('btnInstalarApp').style.display = 'none';
+  }
+  // iPhone/iPad: no hay botón automático, se muestra la guía (solo si no está instalada)
+  if (!yaInstalada && /iPhone|iPad|iPod/.test(navigator.userAgent)) document.getElementById('guiaIphone').style.display = 'block';
 </script>
 </body>
 </html>

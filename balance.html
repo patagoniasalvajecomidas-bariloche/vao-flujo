@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SEBA BALANCE</title>
 <link rel="icon" type="image/svg+xml" href="logo-se-isotipo.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0D47A1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SEBA STG">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ===== VARIABLES (mismas que VAO POS) ===== */
@@ -227,13 +234,21 @@ button { font-family:inherit; }
         <img src="logo-se-isotipo.svg" alt="" style="height:56px;margin-bottom:6px;" onerror="this.style.display='none'">
         <div id="overlayPinTitulo" style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;margin-bottom:4px;">Verificando sesión...</div>
         <div id="overlayPinSub" style="font-size:0.8rem;opacity:0.75;margin-bottom:24px;">SEBA BALANCE</div>
+        <div id="overlayPinCargando" role="status" aria-live="polite" style="display:none;align-items:center;justify-content:center;gap:10px;margin:0 0 14px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.16);font-weight:800;font-size:1rem;">⏳ Verificando…</div>
         <div id="overlayPinForm" style="display:none;">
-            <input type="password" id="overlayPinInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="PIN: 6 números" autocomplete="off"
-                   onkeydown="if(event.key==='Enter')intentarLoginPin()"
-                   style="width:100%;padding:16px;border:none;border-radius:12px;font-size:1.4rem;text-align:center;letter-spacing:0.4em;outline:none;margin-bottom:14px;font-family:'DM Sans',sans-serif;">
+            <div style="position:relative;">
+            <input type="password" id="overlayPinInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="PIN: 6 números" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
+                   onkeydown="if(event.key==='Enter'){this.blur();intentarLoginPin();}"
+                   style="width:100%;padding:16px 52px;border:none;border-radius:12px;font-size:1.4rem;text-align:center;letter-spacing:0.4em;outline:none;margin-bottom:14px;font-family:'DM Sans',sans-serif;box-sizing:border-box;">
+            <button type="button" id="overlayPinOjo" onclick="alternarVerPin()" aria-label="Mostrar el PIN" title="Mostrar / ocultar el PIN" style="position:absolute;right:8px;top:8px;width:40px;height:40px;border:none;border-radius:10px;background:#EEF3FB;font-size:1.15rem;cursor:pointer;">👁️</button>
+            </div>
             <div id="overlayPinError" style="color:#ffcdd2;font-size:0.85rem;min-height:18px;margin-bottom:10px;"></div>
             <button id="overlayPinBtn" onclick="intentarLoginPin()" style="width:100%;padding:14px;border:none;border-radius:50px;background:linear-gradient(135deg,var(--naranja),var(--naranja-dark));color:white;font-size:1rem;font-weight:900;cursor:pointer;">Ingresar</button>
             <button type="button" onclick="irAlInicio()" style="width:100%;padding:12px;border:none;background:transparent;color:rgba(255,255,255,0.75);font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:6px;">← Atrás</button>
+            <div id="pinSoporte" style="display:none;">
+                <button type="button" onclick="abrirSoporte()" style="width:100%;padding:10px;border:none;background:transparent;color:#B9F6CA;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px;">💬 ¿No podés entrar? Escribinos por WhatsApp</button>
+                <button type="button" onclick="abrirSoporte('robo')" style="width:100%;padding:6px;border:none;background:transparent;color:rgba(255,255,255,0.7);font-size:0.8rem;font-weight:600;cursor:pointer;">📵 ¿Perdiste o te robaron el celular?</button>
+            </div>
         </div>
         <div id="overlayPinRed" style="display:none;">
             <div style="font-size:0.9rem;margin-bottom:14px;">Sin conexión con el servidor.</div>
@@ -254,7 +269,7 @@ button { font-family:inherit; }
     <div class="header-right">
         <div class="indicador-carga" id="indicadorCarga" title="Cargando..."></div>
         <button class="btn-head" onclick="SEBA.reportar('balance')" title="Reportar problema" aria-label="Reportar problema">🐞</button>
-        <button class="btn-head" onclick="irAlInicio()" aria-label="Inicio">🏠</button>
+        <button class="btn-head" id="btnSoporte" onclick="abrirSoporte()" title="Soporte por WhatsApp" aria-label="Soporte por WhatsApp" style="display:none;background:#25D366;">💬</button>
     </div>
 </div>
 
@@ -265,7 +280,7 @@ button { font-family:inherit; }
     <button class="btn-tool hoy" data-mod="HOY" onclick="usar('HOY', abrirHoy)"><i>📋</i>Hoy</button>
     <button class="btn-tool stats" data-mod="REPORTES" onclick="usar('REPORTES', () => irA('reportes.html'))"><i>📊</i>Reportes</button>
     <button class="btn-tool" data-mod="DEUDAS" onclick="usar('DEUDAS', () => irA('deudas.html'))"><i>🧾</i>Deudas</button>
-    <button class="btn-tool cerrar" onclick="irAlInicio()"><i>🚪</i>Salir</button>
+    <button class="btn-tool cerrar" onclick="confirmarSalir()"><i>🚪</i>Salir</button>
 </div>
 
 <!-- FRANJA: GASTO/INGRESO + SALDOS -->
@@ -408,6 +423,21 @@ button { font-family:inherit; }
     </div>
 </div>
 
+<!-- ===== MODAL SALIR (v5, de VAO POS V37) ===== -->
+<div class="modal-bg" id="modalSalir" onclick="if(event.target===this)cerrarModal()">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header"><span class="modal-titulo">🚪 ¿Cerrar la sesión?</span><button class="modal-cerrar" onclick="cerrarModal()">✕</button></div>
+        <div class="modal-body">
+            <div style="font-size:0.92rem;line-height:1.45;margin-bottom:6px;">La próxima vez que entres te va a pedir el PIN.</div>
+            <div id="salirPendiente" style="display:none;font-size:0.85rem;color:#b71c1c;font-weight:700;margin-bottom:6px;">⚠️ Hay una boleta enviada sin confirmar. Queda guardada en este celular.</div>
+            <div style="font-size:0.8rem;color:#777;line-height:1.4;margin:8px 0 14px;">Si perdiste un celular donde tenías SEBA abierto, escribinos y lo cerramos a distancia.</div>
+            <button class="btn-guardar" id="btnSalirSi" style="background:linear-gradient(135deg,#c62828,#8e0000);" onclick="salirAhora()">Sí, cerrar sesión</button>
+            <button class="btn-sec" style="margin-bottom:0;" onclick="cerrarModal()">No, seguir usando</button>
+        </div>
+    </div>
+</div>
+
 <!-- ===== MODAL MI PLAN (v4) ===== -->
 <div class="modal-bg" id="modalPlan" onclick="if(event.target===this)cerrarModal()">
     <div class="modal-sheet">
@@ -429,7 +459,7 @@ button { font-family:inherit; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 4;
+window.APP_VERSION = 5;
 window.SEBA_BADGE_BOTTOM = 84;
 const S = window.SEBA;
 const PREFIJO = S.prefijo;
@@ -456,8 +486,17 @@ document.getElementById('headerSub').textContent = 'SEBA BALANCE · v' + APP_VER
 (function () { const c = S.colorPorPrefijo(PREFIJO); document.getElementById('headerAvatar').style.background = 'linear-gradient(135deg,' + c[0] + ',' + c[1] + ')'; })();
 
 function irA(pagina, hash) { location.href = pagina + '?p=' + PREFIJO + (hash || ''); }
+// v5 (VAO POS V37): Salir pide confirmación con una ventana propia. El 🏠 se sacó porque cerraba la sesión.
+function confirmarSalir() {
+    document.getElementById('salirPendiente').style.display = S.ls.get(K_CURSO) ? 'block' : 'none';
+    abrirModal('modalSalir');
+}
+function salirAhora() { modalAbierto = null; document.getElementById('modalSalir').classList.remove('open'); cerrarSesionYSalir(); }
 function irAlInicio() {
     if (S.ls.get(K_CURSO) && !confirm('Hay una boleta enviada sin confirmar. Queda guardada en este celular.\n\n¿Salir igual?')) return;
+    cerrarSesionYSalir();
+}
+function cerrarSesionYSalir() {
     const t = S.token();
     S.setToken('');
     if (t) S.api('cerrarSesion', { token: t }).catch(() => {});
@@ -472,7 +511,49 @@ function mostrarFormularioPin(msg) {
     document.getElementById('overlayPinForm').style.display = 'block';
     document.getElementById('overlayPinRed').style.display = 'none';
     document.getElementById('overlayPinError').textContent = msg || '';
-    const i = document.getElementById('overlayPinInput'); i.value = ''; setTimeout(() => i.focus(), 50);
+    document.getElementById('overlayPinCargando').style.display = 'none';
+    const i = document.getElementById('overlayPinInput'); i.value = ''; i.type = 'password'; document.getElementById('overlayPinOjo').textContent = '👁️';
+    setTimeout(() => i.focus(), 50);
+    cargarSoportePublico();
+}
+// v5 (VAO POS V36): mostrar/ocultar el PIN (oculto por defecto)
+function alternarVerPin() {
+    const i = document.getElementById('overlayPinInput'), b = document.getElementById('overlayPinOjo');
+    const ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password';
+    b.textContent = ver ? '🙈' : '👁️'; b.setAttribute('aria-label', ver ? 'Ocultar el PIN' : 'Mostrar el PIN');
+}
+// v5 (VAO POS V34): soporte por WhatsApp. El número sale de la hoja AJUSTES (getInfo, público).
+// El mensaje lleva el usuario y la versión: NUNCA el PIN ni datos de movimientos.
+let soporteWA = '';
+function ponerSoporte(w) {
+    soporteWA = String(w || '').replace(/\D/g, '');
+    const hay = !!soporteWA;
+    document.getElementById('btnSoporte').style.display = hay ? '' : 'none';
+    document.getElementById('pinSoporte').style.display = hay ? 'block' : 'none';
+}
+let _soporteCargado = false;
+async function cargarSoportePublico() {
+    if (_soporteCargado || soporteWA) { ponerSoporte(soporteWA); return; }
+    _soporteCargado = true;
+    const r = await S.api('getInfo', {}, { token: false, prefijo: '' });
+    if (r && r.soporte) ponerSoporte(r.soporte.whatsapp);
+}
+function abrirSoporte(motivo) {
+    if (!soporteWA) return;
+    let nombre = (document.getElementById('headerTitulo').textContent || '').trim();
+    if (/^Cargando/i.test(nombre) || nombre.toUpperCase() === PREFIJO) nombre = '';
+    const quien = (nombre ? nombre + ' ' : '') + '(' + PREFIJO + ')';
+    const txt = motivo === 'robo'
+        ? 'Hola, perdí / me robaron el celular. Necesito cerrar las sesiones abiertas de SEBA BALANCE y un PIN nuevo.\nUsuario: ' + quien
+        : 'Hola, necesito ayuda con SEBA BALANCE.\nUsuario: ' + quien + '\nVersión: v' + APP_VERSION + '\n\nMi consulta: ';
+    window.open('https://wa.me/' + soporteWA + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+}
+// v5 (VAO POS V36): una sola vez por aparato, cuando cambia la versión. No en la primera vez.
+function avisarVersionNueva() {
+    let ant = null; try { ant = localStorage.getItem('seba_version_vista'); localStorage.setItem('seba_version_vista', String(APP_VERSION)); } catch (e) { return; }
+    if (!ant || Number(ant) >= APP_VERSION) return;
+    S.toast('✅ SEBA BALANCE se actualizó a v' + APP_VERSION, 'verde', 4500);
 }
 function ocultarOverlayPin() { document.getElementById('overlayPin').style.display = 'none'; }
 async function intentarLoginPin() {
@@ -480,7 +561,10 @@ async function intentarLoginPin() {
     const btn = document.getElementById('overlayPinBtn');
     if (!/^\d{6}$/.test(pin)) { document.getElementById('overlayPinError').textContent = 'El PIN debe tener 6 números'; return; }
     btn.disabled = true; btn.textContent = 'Verificando...';
+    document.getElementById('overlayPinInput').blur();
+    document.getElementById('overlayPinCargando').style.display = 'flex';
     const r = await S.api('clienteLogin', { prefijo: PREFIJO, pin: pin }, { token: false, prefijo: '' });
+    document.getElementById('overlayPinCargando').style.display = 'none';
     btn.disabled = false; btn.textContent = 'Ingresar';
     if (r && r.success && r.token) { S.setToken(r.token); verificarSesion(); }
     else mostrarFormularioPin(r ? (r.error || 'PIN incorrecto') : 'Sin conexión. Probá de nuevo.');
@@ -522,6 +606,7 @@ async function cargarEstado(silencioso) {
         S.toast('❌ ' + r.error, 'rojo'); return false;
     }
     estado = r;
+    ponerSoporte(r.soporte && r.soporte.whatsapp);
     productos = r.productos || [];
     cuentas = r.cuentas || [];
     articulos = r.articulos || [];
@@ -680,9 +765,12 @@ function score(nombre, terminos) {
 function resultadosBusqueda(q) {
     const n = normalizar(q); if (!n) return [];
     const ts = expandir(n);
-    const con = delTipo().map(p => ({ p, s: score(normalizar(p.name), ts) * 2 + score(normalizar(p.category), ts) + 5, u: p.uso || 0 }));
-    const art = articulosDelTipo().map(a => ({ a, s: score(normalizar(a.name), ts) * 2 + score(normalizar(a.marca + ' ' + a.rubro), ts), u: a.uso || 0 }));
-    return con.concat(art).filter(x => x.s > 0).sort((a, b) => b.s - a.s || b.u - a.u).slice(0, 20);
+    // v5 (VAO POS V30): con 2 o más palabras tiene que tener TODAS (cada una o un sinónimo), en cualquier orden.
+    const grupos = n.split(' ').filter(Boolean).map(w => expandir(w));
+    const todas = txt => grupos.length < 2 || grupos.every(g => g.some(t => t && txt.includes(t)));
+    const con = delTipo().map(p => ({ p, s: score(normalizar(p.name), ts) * 2 + score(normalizar(p.category), ts) + 5, u: p.uso || 0, ok: todas(normalizar(p.name + ' ' + p.category)) }));
+    const art = articulosDelTipo().map(a => ({ a, s: score(normalizar(a.name), ts) * 2 + score(normalizar(a.marca + ' ' + a.rubro), ts), u: a.uso || 0, ok: todas(normalizar(a.name + ' ' + a.marca + ' ' + a.pres + ' ' + a.rubro)) }));
+    return con.concat(art).filter(x => x.s > 0 && x.ok).sort((a, b) => b.s - a.s || b.u - a.u).slice(0, 20);
 }
 let _bt;
 function buscar() {
@@ -1321,6 +1409,8 @@ async function guardarCuenta() {
 // ========== INICIO ==========
 renderTodo();
 verificarSesion();
+avisarVersionNueva();
+if ('serviceWorker' in navigator) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 </script>
 </body>
 </html>

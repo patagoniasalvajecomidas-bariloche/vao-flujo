@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SEBA BALANCE · Admin</title>
 <link rel="icon" type="image/svg+xml" href="logo-se-isotipo.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0D47A1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SEBA STG">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -767,7 +774,7 @@ body { overflow-x:hidden; }
 <script src="seba-config.js"></script>
 <script src="seba-comun.js"></script>
 <script>
-window.APP_VERSION = 4;
+window.APP_VERSION = 5;
 const S = window.SEBA;
 document.addEventListener('DOMContentLoaded', function () {
     var tag = document.createElement('span');
@@ -962,13 +969,13 @@ async function confirmarVigencia() {
 }
 async function resetPin(p) {
     const c = clientesCargados.find(x => x.prefijo === p);
-    if (!confirm('¿Resetear el PIN de ' + p + ' (' + (c ? c.nombre : '') + ')?\n\nSe genera un PIN nuevo y el anterior deja de funcionar.')) return;
+    if (!confirm('¿Resetear el PIN de ' + p + ' (' + (c ? c.nombre : '') + ')?\n\nSe genera un PIN nuevo, el anterior deja de funcionar y se cierran todas sus sesiones abiertas (sirve si perdió o le robaron el celular).')) return;
     const enviar = !!(c && c.correo) && confirm('¿Mandar el PIN nuevo por correo a ' + c.correo + '?\n\nAceptar = sí · Cancelar = solo mostrarlo acá');
     const res = await api('resetPin', { prefijo: p, enviarCorreo: enviar });
     if (!res) { toast('Sin respuesta: volvé a resetear para ver un PIN nuevo', 'rojo'); return; }
     if (manejarSesion(res)) return;
     if (res.error) { toast('Error: ' + res.error, 'rojo'); return; }
-    alert('🔑 PIN nuevo para ' + p + ': ' + res.pin + (res.correo ? '\n\n' + (res.correo.enviado ? '✉️ También se lo mandamos por correo.' : '⚠️ El correo NO salió: ' + res.correo.motivo) : '') + '\n\nAnotalo ahora — no se puede volver a ver.'); cargarClientes();
+    alert('🔑 PIN nuevo para ' + p + ': ' + res.pin + (res.sesionesCerradas ? '\n🚪 Se cerraron ' + res.sesionesCerradas + ' sesión(es) abierta(s).' : '') + (res.correo ? '\n\n' + (res.correo.enviado ? '✉️ También se lo mandamos por correo.' : '⚠️ El correo NO salió: ' + res.correo.motivo) : '') + '\n\nAnotalo ahora — no se puede volver a ver.'); cargarClientes();
 }
 function abrirApp(p) { window.open('balance.html?p=' + p, '_blank'); }
 async function cargarIncidencias() {
